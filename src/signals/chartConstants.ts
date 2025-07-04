@@ -2,8 +2,8 @@ import { signal, computed } from "@preact/signals";
 
 import { parse } from '@vanillaes/csv';
 
-const API_URL_CSV = 'https://docs.google.com/spreadsheets/d/1B8tX9VL2PcSJKyuHFVd2UT_8kYlY4ZdwHwg9MfWOPug/export?format=csv&gid=1855810409';
-
+const API_URL_CSV_MAS = 'https://docs.google.com/spreadsheets/d/10EfgAgU6cHmwWyWDHKexkwj_soBubgHz4_VNykPBQDo/export?format=csv&gid=1855810409';
+const API_URL_CSV_APD = 'https://docs.google.com/spreadsheets/d/10EfgAgU6cHmwWyWDHKexkwj_soBubgHz4_VNykPBQDo/export?format=csv&gid=1180914346';
 export type Difficulty = "Expert" | "Master" | "Append";
 
 export const isDifficulty = (s: string): s is Difficulty => {
@@ -14,6 +14,8 @@ export type Song = {
     songNameEn: string;
     songNameJp: string;
     diffConstant: number;
+    FC_const: number;
+    AP_const: number;
     diffLevel: string;  // e.g. can be "APD 30"
     noteCount: number;
     difficulty: Difficulty;
@@ -49,37 +51,40 @@ export const $sortedIds = computed(() => {
         throw Error("chart contants are not loaded");
     }
     return Object.values(songData.data)
-        .toSorted((a, b) => b.diffConstant - a.diffConstant)
+        .toSorted((a, b) => b.AP_const - a.AP_const)
         .map(song => song.uid);
 });
-
-async function fetchData() {
+const newSongData: SongMap = {};
+async function fetchData(sheet: string) {
     try {
-        const response = await fetch(API_URL_CSV);
+        const response = await fetch(sheet);
         const text = await response.text();
         const data: string[][] = parse(text);  // this is now an array of arrays
         const dataWithoutFirstRow = data.slice(1);  // first row is header
-        const newSongData: SongMap = {};
         dataWithoutFirstRow.forEach(row => {
-            const songId = row[6];
-            const diffConstant = parseFloat(row[2]);
-            if (songId === '' || Number.isNaN(diffConstant)) {
+            const songId = row[7];
+            const FC_const = parseFloat(row[2]);
+            const AP_const = parseFloat(row[3]);
+            if (songId === '' || Number.isNaN(FC_const) || Number.isNaN(AP_const)) {
                 // skip this row, we don't have enough information to use this chart
                 console.log('skipping row', row);
             }
+            else{
             const songNameEn = row[0];
             const songNameJp = row[1];
-            const diffLevel = row[3];
-            const noteCount = parseInt(row[4]);
-            const difficulty = isDifficulty(row[5]) ? row[5] : "Expert";
-            if (!isDifficulty(row[5])) {
+            const diffLevel = row[4];
+            const noteCount = parseInt(row[5]);
+            const difficulty = isDifficulty(row[6]) ? row[6] : "Expert";
+            if (!isDifficulty(row[6])) {
                 console.warn(`Song ${songNameEn} has an unknown difficulty, falling back to Expert`)
             }
             const uid = songId + difficulty;
             const newRow = {
                 songNameEn: songNameEn,
                 songNameJp: songNameJp,
-                diffConstant: diffConstant,
+                FC_const: FC_const,
+                AP_const: AP_const,
+                diffConstant: 0,
                 diffLevel: diffLevel,
                 noteCount: noteCount,
                 difficulty: difficulty,
@@ -87,6 +92,7 @@ async function fetchData() {
                 uid: uid,
             };
             newSongData[newRow['uid']] = newRow;
+        }
         });
         $chartConstantData.value = {
             state: 'loaded',
@@ -103,4 +109,6 @@ async function fetchData() {
     }
 }
 
-fetchData();
+fetchData(API_URL_CSV_MAS); 
+// fix someday
+// fetchData(API_URL_CSV_APD);

@@ -6,7 +6,16 @@ import { localStorageSignal } from './utils.js';
 const CLEAR_DATA_LS_KEY = '_x_clearData';
 const PINNED_CHART_LS_KEY = '_x_pinnedChart';
 
-const NOT_AP_SCORE_REDUCTION = 1;
+// function for fc score reduction calculation
+function AP_SCORE_ADDITION(level: number){
+    if(level < 26){
+        return 3;
+    }
+    if(level < 31){
+        return (36-level)*(0.3)
+    }
+    return 1.5;
+}
 
 type ClearData = Record<string, 'fc' | 'ap' | null>;
 
@@ -26,11 +35,14 @@ export const $finalDataList = computed(() => {
         if (clearData[uid] === 'fc') {
             final.push({
                 ...songs[uid],
-                diffConstant: songs[uid].diffConstant - NOT_AP_SCORE_REDUCTION,
+                diffConstant: songs[uid].FC_const,
             });
         }
         if (clearData[uid] === 'ap') {
-            final.push(songs[uid]);
+            final.push({
+                ...songs[uid],
+                diffConstant: songs[uid].AP_const + AP_SCORE_ADDITION(songs[uid].AP_const),
+            });
         }
     }
     return final.toSorted((a, b) => {

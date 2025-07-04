@@ -375,16 +375,24 @@ export async function drawImage(containerId: string) {
             x: BADGE_X,
             y: BADGE_Y
         });
-
+        
+        const Play_const = 
+            $clearData.value[song.uid] === 'fc'
+                ? `${song.FC_const.toFixed(1)}`
+                : `${song.AP_const.toFixed(1)}`
+        const fill_color =
+            $clearData.value[song.uid] === 'fc'
+                ? '#FFFFFF'
+                : '#88FFFF'
         const difficultyText = new Konva.Text({
             x: BADGE_X,
             y: BADGE_Y + 1,
             width: BADGE_WIDTH,
             height: BADGE_HEIGHT,
-            text: `${song.diffConstant.toFixed(1)}`,
+            text: Play_const,
             fontFamily: FONT,
             fontSize: 14,
-            fill: 'white',
+            fill: fill_color,
             lineHeight: 2,
             ellipsis: true,
             wrap: 'word',
